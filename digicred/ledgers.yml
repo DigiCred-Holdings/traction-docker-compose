@@ -1,0 +1,12 @@
+- id: digicred-test
+  is_production: true
+  is_write: true
+  genesis_url: 'http://genesis.digicred.services:9000/genesis'
+  endorser_did: '6f5Q4P6wbBz18NWagTUXNL'
+  endorser_alias: 'digicred-test-endorser'
+- id: digicred-test-1
+  is_production: true
+  is_write: true
+  genesis_url: 'http://genesis.digicred.services:9000/genesis'
+  endorser_did: 'SStjc7Ykg493TQPC4BVgDV'
+  endorser_alias: 'digicred-test-endorser-1'
