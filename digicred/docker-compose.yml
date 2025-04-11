@@ -300,12 +300,6 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 
-  maildev:
-    image: ghcr.io/digicred-holdings/maildev:latest
-    ports:
-      - "1080:1080"
-      - "1025:1025"
-
 volumes:
   traction-wallet:
   endorser-wallet:
