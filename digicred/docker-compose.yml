@@ -1,11 +1,11 @@
 services:
   traction-acapy-image-builder:
-    image: ghcr.io/digicred-holdings/traction-plugins-acapy:sha-d1dfcdc
+    image: ghcr.io/digicred-holdings/traction-plugins-acapy-v1.0.1:sha-89da095
     entrypoint: "/bin/bash"
     tty: true
 
   traction-agent:
-    image: ghcr.io/digicred-holdings/traction-agent:latest
+    image: docker pull ghcr.io/digicred-holdings/traction-agent-v1.0.1:1.0.1-20250101
     depends_on:
       traction-db:
         condition: service_healthy
@@ -91,7 +91,7 @@ services:
       - host.docker.internal:host-gateway
 
   tenant-ui:
-    image: ghcr.io/digicred-holdings/traction-tenant-ui:latest
+    image: ghcr.io/digicred-holdings/traction-tenant-ui-v1.0.1:sha-89da095
     depends_on:
       tenant-proxy:
         condition: service_started
@@ -115,7 +115,7 @@ services:
       - host.docker.internal:host-gateway
 
   tenant-proxy:
-    image: ghcr.io/digicred-holdings/traction-tenant-proxy:latest
+    image: ghcr.io/digicred-holdings/traction-tenant-proxy-v1.0.1:sha-89da095
     depends_on:
       traction-agent:
         condition: service_started
