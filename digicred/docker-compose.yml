@@ -5,7 +5,7 @@ services:
     tty: true
 
   traction-agent:
-    image: docker pull ghcr.io/digicred-holdings/traction-agent-v1.0.1:1.0.1-20250101
+    image: ghcr.io/digicred-holdings/traction-agent-v1.0.1:1.0.1-20250101
     depends_on:
       traction-db:
         condition: service_healthy
