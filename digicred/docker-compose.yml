@@ -3,6 +3,7 @@ services:
     image: ghcr.io/digicred-holdings/traction-plugins-acapy-v1.0.1:latest
     entrypoint: "/bin/bash"
     tty: true
+    networks: [default]
 
   traction-agent:
     image: ghcr.io/digicred-holdings/traction-agent-v1.0.1:latest
@@ -65,24 +66,25 @@ services:
       - ACAPY_PLUGIN_CONFIG=${ACAPY_PLUGIN_CONFIG}
       - RUST_LOG=error
     ports:
-      - ${TRACTION_ACAPY_ADMIN_PORT}:${TRACTION_ACAPY_ADMIN_PORT}
-      - ${TRACTION_ACAPY_HTTP_PORT}:${TRACTION_ACAPY_HTTP_PORT}
+      - "${TRACTION_ACAPY_ADMIN_PORT}:${TRACTION_ACAPY_ADMIN_PORT}"
+      - "${TRACTION_ACAPY_HTTP_PORT}:${TRACTION_ACAPY_HTTP_PORT}"
     entrypoint: /bin/bash
     command: ["-c", "sleep 5; ./ngrok-wait.sh"]
     volumes:
-      - "./plugin-config.yml:/home/aries/plugin-config.yml"
-      - "./ledgers.yml:/home/aries/ledgers.yml"
+      - ./plugin-config.yml:/home/aries/plugin-config.yml
+      - ./ledgers.yml:/home/aries/ledgers.yml
     extra_hosts:
-      - host.docker.internal:host-gateway
+      - "host.docker.internal:host-gateway"
+    networks: [default]
 
   traction-db:
-    image: "postgres:15"
+    image: postgres:15
     environment:
-      - POSTGRES_USER=${POSTGRESQL_USER}
-      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD}
-      - POSTGRES_DB=${POSTGRESQL_DB}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_DB}
     ports:
-      - ${POSTGRESQL_PORT}:5432
+      - "${POSTGRESQL_PORT}:5432"
     volumes:
       - traction-wallet:/var/lib/postgresql/data
     healthcheck:
@@ -90,8 +92,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    extra_hosts:
-      - host.docker.internal:host-gateway
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
 
   tenant-ui:
     image: ghcr.io/digicred-holdings/traction-tenant-ui-v1.0.1:latest
@@ -99,25 +101,25 @@ services:
       tenant-proxy:
         condition: service_started
     environment:
-      - SERVER_TRACTION_URL=${SERVER_TRACTION_URL}
-      - SERVER_LOKI_URL=${SERVER_LOKI_URL}
-      - FRONTEND_TENANT_PROXY_URL=${FRONTEND_TENANT_PROXY_URL}
-      - FRONTEND_LOG_STREAM_URL=${FRONTEND_LOG_STREAM_URL}
-      - IMAGE_BUILDTIME=${IMAGE_BUILDTIME}
-      - IMAGE_TAG=${IMAGE_TAG}
-      - IMAGE_VERSION=${IMAGE_VERSION}
-      - UX_APP_TITLE=${UX_APP_TITLE}
-      - UX_APP_INNKEEPER_TITLE=${UX_APP_INNKEEPER_TITLE}
-      - UX_SIDEBAR_TITLE=${UX_SIDEBAR_TITLE}
-      - UX_COPYRIGHT=${UX_COPYRIGHT}
-      - UX_OWNER=${UX_OWNER}
-      - FRONTEND_QUICK_CONNECT_ENDORSER_NAME=${FRONTEND_QUICK_CONNECT_ENDORSER_NAME}
-      - SERVER_SMTP_SERVER=maildev
-      - SERVER_SMTP_PORT=1025
+      SERVER_TRACTION_URL: ${SERVER_TRACTION_URL}
+      SERVER_LOKI_URL: ${SERVER_LOKI_URL}
+      FRONTEND_TENANT_PROXY_URL: ${FRONTEND_TENANT_PROXY_URL}
+      FRONTEND_LOG_STREAM_URL: ${FRONTEND_LOG_STREAM_URL}
+      IMAGE_BUILDTIME: ${IMAGE_BUILDTIME}
+      IMAGE_TAG: ${IMAGE_TAG}
+      IMAGE_VERSION: ${IMAGE_VERSION}
+      UX_APP_TITLE: ${UX_APP_TITLE}
+      UX_APP_INNKEEPER_TITLE: ${UX_APP_INNKEEPER_TITLE}
+      UX_SIDEBAR_TITLE: ${UX_SIDEBAR_TITLE}
+      UX_COPYRIGHT: ${UX_COPYRIGHT}
+      UX_OWNER: ${UX_OWNER}
+      FRONTEND_QUICK_CONNECT_ENDORSER_NAME: ${FRONTEND_QUICK_CONNECT_ENDORSER_NAME}
+      SERVER_SMTP_SERVER: maildev
+      SERVER_SMTP_PORT: 1025
     ports:
-      - ${TENANT_UI_PORT}:8080
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      - "${TENANT_UI_PORT}:8080"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
 
   tenant-proxy:
     image: ghcr.io/digicred-holdings/traction-tenant-proxy-v1.0.1:latest
@@ -126,105 +128,98 @@ services:
         condition: service_started
     restart: unless-stopped
     environment:
-      - ACAPY_ADMIN_URL=${TRACTION_ACAPY_ADMIN_URL}
-      - ACAPY_ADMIN_URL_API_KEY=${ACAPY_ADMIN_API_KEY}
+      ACAPY_ADMIN_URL: ${TRACTION_ACAPY_ADMIN_URL}
+      ACAPY_ADMIN_URL_API_KEY: ${ACAPY_ADMIN_API_KEY}
     ports:
-      - ${TENANT_PROXY_PORT}:8080
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      - "${TENANT_PROXY_PORT}:8080"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
 
   endorser-agent:
     image: ghcr.io/openwallet-foundation/acapy-agent:py3.12-1.2.2
     depends_on:
       endorser-db:
         condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        sleep 5;
+        aca-py start \
+          --auto-provision \
+          --arg-file endorser-acapy-args.yml \
+          --inbound-transport http '0.0.0.0' ${ACAPY_ENDORSER_HTTP_PORT} \
+          --genesis-url '${ACAPY_GENESIS_URL}' \
+          --endpoint ${ACAPY_ENDORSER_ENDPOINT} \
+          --wallet-name '${ENDORSER_ACAPY_WALLET_DATABASE}' \
+          --wallet-key '${ENDORSER_ACAPY_WALLET_ENCRYPTION_KEY}' \
+          --wallet-type '${ENDORSER_ACAPY_WALLET_TYPE}' \
+          --wallet-storage-type '${ENDORSER_ACAPY_WALLET_STORAGE_TYPE}' \
+          --wallet-storage-config '{"url":"${ENDORSER_POSTGRESQL_HOST}:5432","max_connections":5}' \
+          --wallet-storage-creds '{"account":"${POSTGRESQL_USER}","password":"${POSTGRESQL_PASSWORD}","admin_account":"${POSTGRESQL_USER}","admin_password":"${POSTGRESQL_PASSWORD}"}' \
+          --replace-public-did \
+          --seed '${ACAPY_ENDORSER_SEED}' \
+          --admin '0.0.0.0' ${ACAPY_ENDORSER_ADMIN_PORT} \
+          --label '${ENDORSER_AGENT_NAME}' \
+          ${ENDORSER_ACAPY_ADMIN_CONFIG}
     ports:
       - "${ACAPY_ENDORSER_ADMIN_PORT}:${ACAPY_ENDORSER_ADMIN_PORT}"
       - "${ACAPY_ENDORSER_HTTP_PORT}:${ACAPY_ENDORSER_HTTP_PORT}"
-    networks:
-      - default
-    entrypoint: /bin/bash
-    command: [
-      "-c",
-        "sleep 5;
-        aca-py start \
-        --auto-provision
-        --arg-file endorser-acapy-args.yml \
-        --inbound-transport http '0.0.0.0' ${ACAPY_ENDORSER_HTTP_PORT} \
-        --genesis-url '${ACAPY_GENESIS_URL}' \
-        --endpoint ${ACAPY_ENDORSER_ENDPOINT} \
-        --wallet-name '${ENDORSER_ACAPY_WALLET_DATABASE}' \
-        --wallet-key '${ENDORSER_ACAPY_WALLET_ENCRYPTION_KEY}' \
-        --wallet-type '${ENDORSER_ACAPY_WALLET_TYPE}' \
-        --wallet-storage-type '${ENDORSER_ACAPY_WALLET_STORAGE_TYPE}' \
-        --wallet-storage-config '{\"url\":\"${ENDORSER_POSTGRESQL_HOST}:5432\",\"max_connections\":5}' \
-        --wallet-storage-creds '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_USER}\",\"admin_password\":\"${POSTGRESQL_PASSWORD}\"}' \
-        --replace-public-did \
-        --seed '${ACAPY_ENDORSER_SEED}' \
-        --admin '0.0.0.0' ${ACAPY_ENDORSER_ADMIN_PORT} \
-        --label '${ENDORSER_AGENT_NAME}' \
-        ${ENDORSER_ACAPY_ADMIN_CONFIG} \
-        ",
-    ]
     environment:
-      - RUST_LOG=debug
-      - ACAPY_ENDPOINT=${ACAPY_ENDPOINT}
+      RUST_LOG: debug
+      ACAPY_ENDPOINT: ${ACAPY_ENDPOINT}
     volumes:
-      - "./endorser-acapy-args.yml:/home/aries/endorser-acapy-args.yml"
-      - "./ledgers.yml:/home/aries/ledgers.yml"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ./endorser-acapy-args.yml:/home/aries/endorser-acapy-args.yml
+      - ./ledgers.yml:/home/aries/ledgers.yml
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
 
   endorser-agent-1:
     image: ghcr.io/openwallet-foundation/acapy-agent:py3.12-1.2.2
     depends_on:
       endorser-db:
         condition: service_healthy
-    ports:
-      - ${ACAPY_ENDORSER_1_ADMIN_PORT}:${ACAPY_ENDORSER_1_ADMIN_PORT}
-      - ${ACAPY_ENDORSER_1_HTTP_PORT}:${ACAPY_ENDORSER_1_HTTP_PORT}
-    networks:
-      - default
     entrypoint: /bin/bash
-    command: [
-      "-c",
-        "sleep 5;
+    command:
+      - -c
+      - |
+        sleep 5;
         aca-py start \
-        --auto-provision
-        --arg-file endorser-acapy-args.yml \
-        --inbound-transport http '0.0.0.0' ${ACAPY_ENDORSER_1_HTTP_PORT} \
-        --genesis-url '${ACAPY_GENESIS_URL}' \
-        --endpoint ${ACAPY_ENDORSER_1_ENDPOINT} \
-        --wallet-name '${ENDORSER_1_ACAPY_WALLET_DATABASE}' \
-        --wallet-key '${ENDORSER_ACAPY_WALLET_ENCRYPTION_KEY}' \
-        --wallet-type '${ENDORSER_ACAPY_WALLET_TYPE}' \
-        --wallet-storage-type '${ENDORSER_ACAPY_WALLET_STORAGE_TYPE}' \
-        --wallet-storage-config '{\"url\":\"${ENDORSER_POSTGRESQL_HOST}:5432\",\"max_connections\":5}' \
-        --wallet-storage-creds '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_USER}\",\"admin_password\":\"${POSTGRESQL_PASSWORD}\"}' \
-        --replace-public-did \
-        --seed '${ACAPY_ENDORSER_SEED_1}' \
-        --admin '0.0.0.0' ${ACAPY_ENDORSER_1_ADMIN_PORT} \
-        --label '${ENDORSER_AGENT_NAME}' \
-        ${ENDORSER_ACAPY_ADMIN_CONFIG} \
-        ",
-    ]
+          --auto-provision \
+          --arg-file endorser-acapy-args.yml \
+          --inbound-transport http '0.0.0.0' ${ACAPY_ENDORSER_1_HTTP_PORT} \
+          --genesis-url '${ACAPY_GENESIS_URL}' \
+          --endpoint ${ACAPY_ENDORSER_1_ENDPOINT} \
+          --wallet-name '${ENDORSER_1_ACAPY_WALLET_DATABASE}' \
+          --wallet-key '${ENDORSER_ACAPY_WALLET_ENCRYPTION_KEY}' \
+          --wallet-type '${ENDORSER_ACAPY_WALLET_TYPE}' \
+          --wallet-storage-type '${ENDORSER_ACAPY_WALLET_STORAGE_TYPE}' \
+          --wallet-storage-config '{"url":"${ENDORSER_POSTGRESQL_HOST}:5432","max_connections":5}' \
+          --wallet-storage-creds '{"account":"${POSTGRESQL_USER}","password":"${POSTGRESQL_PASSWORD}","admin_account":"${POSTGRESQL_USER}","admin_password":"${POSTGRESQL_PASSWORD}"}' \
+          --replace-public-did \
+          --seed '${ACAPY_ENDORSER_SEED_1}' \
+          --admin '0.0.0.0' ${ACAPY_ENDORSER_1_ADMIN_PORT} \
+          --label '${ENDORSER_AGENT_NAME}' \
+          ${ENDORSER_ACAPY_ADMIN_CONFIG}
+    ports:
+      - "${ACAPY_ENDORSER_1_ADMIN_PORT}:${ACAPY_ENDORSER_1_ADMIN_PORT}"
+      - "${ACAPY_ENDORSER_1_HTTP_PORT}:${ACAPY_ENDORSER_1_HTTP_PORT}"
     environment:
-        - RUST_LOG=debug
-        - ACAPY_ENDPOINT=${ACAPY_ENDPOINT}
-
+      RUST_LOG: debug
+      ACAPY_ENDPOINT: ${ACAPY_ENDPOINT}
     volumes:
-      - "./endorser-acapy-args.yml:/home/aries/endorser-acapy-args.yml"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ./endorser-acapy-args.yml:/home/aries/endorser-acapy-args.yml
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
 
   endorser-db:
-    image: "postgres:15"
+    image: postgres:15
     environment:
-      - POSTGRES_USER=${POSTGRESQL_USER}
-      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD}
-      - POSTGRES_DB=${POSTGRESQL_DB}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_DB}
     ports:
-      - ${ENDORSER_POSTGRESQL_PORT}:5432
+      - "${ENDORSER_POSTGRESQL_PORT}:5432"
     volumes:
       - endorser-wallet:/var/lib/postgresql/data
     healthcheck:
@@ -232,15 +227,77 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    extra_hosts:
-      - host.docker.internal:host-gateway
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
+
+  postgres:
+    image: postgres:15
+    container_name: workflow-db
+    env_file: [.env]
+    environment:
+      POSTGRES_USER: ${WORKFLOW_DB_USER}
+      POSTGRES_PASSWORD: ${WORKFLOW_DB_PASSWORD}
+      POSTGRES_DB: ${WORKFLOW_DB_NAME}
+    ports:
+      - "5435:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -q"]
+      interval: 10s     
+      timeout: 5s
+      retries: 5             
+      start_period: 30s   
+    networks: [default]
+
+  redis:
+    image: redis:alpine
+    container_name: crms-controller-redis
+    env_file: [.env]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks: [default]
+
+  node:
+    image: ghcr.io/digicred-holdings/base-controller/crms-controller-app:master
+    platform: linux/amd64
+    container_name: crms-controller-app
+    env_file: [.env]
+    working_dir: /usr/src/app
+    environment:
+      NODE_ENV: production
+      HOST: '${HOST}'
+      REDIS_HOST: redis
+    ports:
+      - "3000:3000"
+    volumes:
+      - sis-upload-data:/usr/src/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+    networks: [default]
 
 volumes:
   traction-wallet:
   endorser-wallet:
   endorser-wallet-1:
+  postgres-data:
+  redis-data:
+  sis-upload-data:
 
 networks:
   default:
     name: digicred_default
     driver: bridge
+    
