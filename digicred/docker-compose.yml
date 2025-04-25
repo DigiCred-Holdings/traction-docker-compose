@@ -121,6 +121,7 @@ services:
       POSTGRESQL_DB: askar-wallet
       POSTGRESQL_USER: ${POSTGRESQL_USER}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      WEBHOOK_API_KEY: ${WEBHOOK_API_KEY}
     ports:
       - "${TENANT_UI_PORT}:8080"
     extra_hosts: ["host.docker.internal:host-gateway"]
