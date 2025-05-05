@@ -100,6 +100,8 @@ services:
     depends_on:
       tenant-proxy:
         condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       SERVER_TRACTION_URL: ${SERVER_TRACTION_URL}
       SERVER_LOKI_URL: ${SERVER_LOKI_URL}
@@ -122,8 +124,48 @@ services:
       POSTGRESQL_USER: ${POSTGRESQL_USER}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       WEBHOOK_API_KEY: ${WEBHOOK_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_TTL: ${REDIS_TTL:-3600}
     ports:
       - "${TENANT_UI_PORT}:8080"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [default]
+
+  tenant-queue-processor:
+    image: ghcr.io/digicred-holdings/traction-tenant-ui-v1.0.1:latest
+    depends_on:
+      tenant-ui:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      SERVER_TRACTION_URL: ${SERVER_TRACTION_URL}
+      SERVER_LOKI_URL: ${SERVER_LOKI_URL}
+      FRONTEND_TENANT_PROXY_URL: ${FRONTEND_TENANT_PROXY_URL}
+      FRONTEND_LOG_STREAM_URL: ${FRONTEND_LOG_STREAM_URL}
+      IMAGE_BUILDTIME: ${IMAGE_BUILDTIME}
+      IMAGE_TAG: ${IMAGE_TAG}
+      IMAGE_VERSION: ${IMAGE_VERSION}
+      UX_APP_TITLE: ${UX_APP_TITLE}
+      UX_APP_INNKEEPER_TITLE: ${UX_APP_INNKEEPER_TITLE}
+      UX_SIDEBAR_TITLE: ${UX_SIDEBAR_TITLE}
+      UX_COPYRIGHT: ${UX_COPYRIGHT}
+      UX_OWNER: ${UX_OWNER}
+      FRONTEND_QUICK_CONNECT_ENDORSER_NAME: ${FRONTEND_QUICK_CONNECT_ENDORSER_NAME}
+      SERVER_SMTP_SERVER: maildev
+      SERVER_SMTP_PORT: 1025
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST}
+      POSTGRESQL_PORT: ${POSTGRESQL_PORT}
+      POSTGRESQL_DB: askar-wallet
+      POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      WEBHOOK_API_KEY: ${WEBHOOK_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_TTL: ${REDIS_TTL:-3600}
+    command: ["node", "dist/src/queue-processor.js"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     networks: [default]
 
@@ -258,18 +300,19 @@ services:
     networks: [default]
 
   redis:
-    image: redis:alpine
-    container_name: crms-controller-redis
-    env_file: [.env]
+    image: "redis:alpine"
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
+    command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+    extra_hosts:
+      - host.docker.internal:host-gateway
     networks: [default]
 
   node:
