@@ -10,9 +10,5 @@ outbound-transport: http
 log-level: info
 endorser-protocol-role: endorser
 requests-through-public-did: true
-#endorser-public-did: <for author>
-#endorser-alias: <for author>
-#auto-request-endorsement: <for author>
 auto-endorse-transactions: true
-#auto-write-transactions: <for author>
-#auto-create-revocation-transactions: <for author>
+
