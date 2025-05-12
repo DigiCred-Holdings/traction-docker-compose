@@ -5,10 +5,11 @@ auto-ping-connection: true
 auto-provision: true
 monitor-ping: true
 public-invites: true
-plugin: 'aries_cloudagent.messaging.jsonld'
 outbound-transport: http
-log-level: info
+log-level: debug
 endorser-protocol-role: endorser
 requests-through-public-did: true
 auto-endorse-transactions: true
 
+#auto-write-transactions: <for author>
+#auto-create-revocation-transactions: <for author>

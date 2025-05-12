@@ -15,17 +15,12 @@ traction_innkeeper:
     wallet_key: change-me
     print_key: true
     print_token: true
-    connect_to_endorser: [
-      {
-        "endorser_alias": "digicred-test-endorser",
-        "ledger_id": "digicred-test",
-      },
-      {
-        "endorser_alias": "digicred-test-endorser-1",
-        "ledger_id": "digicred-test-1",
-      }
-    ]
-    create_public_did: ["digicred-test", "digicred-test-1"]
+    connect_to_endorser:
+      [
+        { "endorser_alias": "digicred-endorser", "ledger_id": "digicred" },
+        { "endorser_alias": "digicred-endorser-1", "ledger_id": "digicred-1" },
+      ]
+    create_public_did: ["digicred", "digicred-1"]
   reservation:
     auto_approve: true
     expiry_minutes: 2880
