@@ -9,6 +9,7 @@ PROJECT_DIR="/home/$USER/traction-docker-compose"
 DIGICRED_DIR="$PROJECT_DIR/digicred"
 ENV_FILE="$DIGICRED_DIR/.env"
 ENV_EXAMPLE="$DIGICRED_DIR/.env.example"
+CADDYFILE_EXAMPLE="$DIGICRED_DIR/Caddyfile.example"
 
 # Variables to find and replace in traction .env file
 PUBLIC_DOMAIN=$(curl ifconfig.me)
@@ -18,12 +19,10 @@ echo "Updating system packages..."
 sudo apt update && sudo apt upgrade -y
 
 # Docker Installation (Check if Docker is installed, if not install it)
-if [ command -v docker > /dev/null 2>&1 ]; then
-    echo "Installing Docker..."
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    sudo apt install docker-compose-plugin -y
-fi
+echo "Installing Docker..."
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo apt install docker-compose-plugin -y
 
 # Install Caddy
 if [ ! -x /var/lib/caddy]; then
@@ -48,19 +47,29 @@ if [ ! -d $PROJECT_DIR ]; then
     git clone https://github.com/DigiCred-Holdings/traction-docker-compose "$PROJECT_DIR"
 fi
 
-if [ ! -s $ENV_FILE ]; then
-    echo "Configuring .env file"
-    cp $ENV_EXAMPLE $ENV_FILE
 
-    sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g"  $ENV_FILE
+# Prompt user input for variables
+read -p "Enter the public domain for your CrMS (default - this machine's public IP):" INPUT_DOMAIN
+if [ -n "$INPUT_DOMAIN" ]; then
+    PUBLIC_DOMAIN="$INPUT_DOMAIN"
 fi
 
-# Docker Compose (Navigate to the project folder and run docker compose)
-echo "Setting up Docker containers..."
-cd $DIGICRED_DIR || exit
-sudo docker compose up -d
+read -p "Enter the email you would like to use for the proxy:" INPUT_EMAIL
 
-# Show Docker container status
-sudo docker ps
+
+# .env file setup
+echo "Configuring .env file"
+cp -f $ENV_EXAMPLE $ENV_FILE
+
+echo "Public domain in .env set to: $PUBLIC_DOMAIN"
+
+sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g"  $ENV_FILE
+
+# Caddyfile setup
+echo "Configuring Caddyfile"
+cp $CADDYFILE_EXAMPLE /etc/caddy/Caddyfile
+
+sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g" /etc/caddy/Caddyfile
+sed -i "s|<email>|$INPUT_EMAIL|g" /etc/caddy/Caddyfile
 
 echo "Setup complete!"

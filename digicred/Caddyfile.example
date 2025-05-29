@@ -1,0 +1,30 @@
+{
+ email <email>
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+<public-domain> {
+    encode gzip
+
+    handle_path /agent/* {
+        reverse_proxy localhost:8030
+    }
+    handle_path /proxy/* {
+        reverse_proxy localhost:8032
+    }
+    handle_path /controller/* {
+        reverse_proxy localhost:3000
+    }
+    handle_path /grafana/* {
+        reverse_proxy localhost:3008
+    }
+    handle {
+        reverse_proxy localhost:5101
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "no-referrer-when-downgrade"
+    }
+}
