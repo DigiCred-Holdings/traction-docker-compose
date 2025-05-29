@@ -25,21 +25,19 @@ sudo sh get-docker.sh
 sudo apt install docker-compose-plugin -y
 
 # Install Caddy
-if [ ! -x /var/lib/caddy]; then
-    echo "Installing Caddy..."
-    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+echo "Installing Caddy..."
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
 
-    # Overwrite existing keyring file without prompting
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+# Overwrite existing keyring file without prompting
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-    sudo apt update && sudo apt install caddy -y
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update && sudo apt install caddy -y
 
-    # Enable and start Caddy
-    echo "Enabling and starting Caddy..."
-    sudo systemctl enable caddy
-    sudo systemctl restart caddy
-fi
+# Enable and start Caddy
+echo "Enabling and starting Caddy..."
+sudo systemctl enable caddy
+sudo systemctl restart caddy
 
 # Clone the repository if not already cloned
 if [ ! -d $PROJECT_DIR ]; then
