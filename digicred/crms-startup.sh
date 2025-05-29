@@ -67,9 +67,10 @@ sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g"  $ENV_FILE
 
 # Caddyfile setup
 echo "Configuring Caddyfile"
-cp $CADDYFILE_EXAMPLE /etc/caddy/Caddyfile
+sudo touch /etc/caddy/Caddyfile
+sudo cp $CADDYFILE_EXAMPLE /etc/caddy/Caddyfile
 
-sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g" /etc/caddy/Caddyfile
-sed -i "s|<email>|$INPUT_EMAIL|g" /etc/caddy/Caddyfile
+sudo sed -i "s|<public-domain>|$PUBLIC_DOMAIN|g" /etc/caddy/Caddyfile
+sudo sed -i "s|<email>|$INPUT_EMAIL|g" /etc/caddy/Caddyfile
 
 echo "Setup complete!"
