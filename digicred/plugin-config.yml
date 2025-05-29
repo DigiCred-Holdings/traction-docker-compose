@@ -10,9 +10,9 @@ multitenant_provider:
 
 traction_innkeeper:
   innkeeper_wallet:
-    tenant_id: innkeeper
+    tenant_id: admin
     wallet_name: traction_innkeeper
-    wallet_key: change-me
+    wallet_key: adminPass
     print_key: true
     print_token: true
     connect_to_endorser:
@@ -22,7 +22,7 @@ traction_innkeeper:
       ]
     create_public_did: ["digicred", "digicred-1"]
   reservation:
-    auto_approve: true
+    auto_approve: false
     expiry_minutes: 2880
     auto_issuer: true
 
