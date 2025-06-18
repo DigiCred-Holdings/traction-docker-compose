@@ -22,7 +22,7 @@ traction_innkeeper:
       ]
     create_public_did: ["digicred", "digicred-1"]
   reservation:
-    auto_approve: false
+    auto_approve: true
     expiry_minutes: 2880
     auto_issuer: true
 
