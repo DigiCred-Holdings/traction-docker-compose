@@ -1,4 +1,46 @@
 services:
+  zrok:
+    image: openziti/zrok
+    restart: unless-stopped
+    user: "${ZROK_UID}"
+    volumes:
+      - ${ZROK_HOME}/.zrok:/home/ziggy/.zrok
+    environment:
+      PFXLOG_NO_JSON: "true"
+    command: share reserved "${ZROK_SHARE_MAIN}" --headless --insecure
+    networks:
+      - default
+    depends_on:
+      gateway:
+        condition: service_started
+  zrok-agent:
+    image: openziti/zrok
+    restart: unless-stopped
+    user: "${ZROK_UID}"
+    volumes:
+      - ${ZROK_HOME}/.zrok:/home/ziggy/.zrok
+    environment:
+      PFXLOG_NO_JSON: "true"
+    command: share reserved "${ZROK_SHARE_ACAPY}" --headless --insecure
+    networks:
+      - default
+    depends_on:
+      traction-agent:
+        condition: service_started
+  gateway:
+    image: nginx
+    volumes:
+     - ./default.conf:/etc/nginx/conf.d/default.conf
+    #ports:
+    # - "8080:80"
+    networks:
+      - default
+    depends_on:
+      traction-agent:
+        condition: service_started
+      tenant-ui:
+        condition: service_healthy
+
   traction-acapy-image-builder:
     image: ghcr.io/digicred-holdings/traction-plugins-acapy-v1.0.1:latest
     entrypoint: "/bin/bash"
@@ -473,4 +515,3 @@ networks:
   default:
     name: digicred_default
     driver: bridge
-    
